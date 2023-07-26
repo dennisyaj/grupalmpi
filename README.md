@@ -1,1 +1,1 @@
-# grupalmpi
+# lab02
