@@ -60,7 +60,7 @@ int main(int argc, char **argv) {
 
     // texto en formato BASE64
     //std::string cipher_text = "3CC4M6vAfC92tf7vIkRzXC9bOZKtT6q6jz0ewyv4niBO7M8jHcdmi+h2yNq4KRJO2TzgL0dZbcwnrZMHClLJHQ==";
-    const char* text_to_find = "cryptographic";
+    const char *text_to_find = "cryptographic";
 
     MPI_Init(&argc, &argv);
 
@@ -76,21 +76,28 @@ int main(int argc, char **argv) {
     long start_index = rank_id * block_size;
     long end_index = (rank_id + 1) * block_size;
 
-    int text_size = 0;
     std::string cipher_text;
-
-   if (rank_id == 0) {
+    if (rank_id == 0) {
         std::string nombre_archivo = "/workspace/grupalmpi/clave.txt";
         cipher_text = leer(nombre_archivo);
         //const char *cipher_text = cipher_text.c_str();
-        fmt::print(fg(fmt::color::gray), "--------clave: {}\n",cipher_text);
-       MPI_Bcast(&cipher_text, 1, MPI_CHAR, 0, MPI_COMM_WORLD);
+        fmt::print(fg(fmt::color::gray), "--------clave: {}\n", cipher_text);
+
+        // Enviar el tamaño del texto cifrado a todos los ranks
+        int cipher_text_size = cipher_text.size() + 1;
+        MPI_Bcast(&cipher_text_size, 1, MPI_INT, 0, MPI_COMM_WORLD);
+
+        // Enviar el texto cifrado a todos los ranks (incluido RANK_0)
+        MPI_Bcast(&cipher_text[0], cipher_text_size, MPI_CHAR, 0, MPI_COMM_WORLD);
+
+    } else {
+        int cipher_text_size;
+        MPI_Bcast(&cipher_text_size, 1, MPI_INT, 0, MPI_COMM_WORLD);
+        cipher_text.resize(cipher_text_size);
+        MPI_Bcast(&cipher_text[0], cipher_text_size, MPI_CHAR, 0, MPI_COMM_WORLD);
     }
 
-    //recibir clave
-    MPI_Status stClave;
-    MPI_Recv(&text_to_find, 1, MPI_CHAR, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &stClave);
-
+    MPI_Bcast(&block_size, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
     if (rank_id == 6) {
         start_index = 7523094288207667809 - 10;
