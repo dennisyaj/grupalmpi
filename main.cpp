@@ -67,27 +67,23 @@ int main(int argc, char **argv) {
     int rank_id;
     int nprocs;
 
-
     MPI_Comm_rank(MPI_COMM_WORLD, &rank_id);
     MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
 
-    long block_size = LLONG_MAX / nprocs;
-
-    long start_index = rank_id * block_size;
-    long end_index = (rank_id + 1) * block_size;
-
+    long block_size;
     std::string cipher_text;
+
     if (rank_id == 0) {
         std::string nombre_archivo = "/workspace/grupalmpi/clave.txt";
         cipher_text = leer(nombre_archivo);
-        //const char *cipher_text = cipher_text.c_str();
         fmt::print(fg(fmt::color::gray), "--------clave: {}\n", cipher_text);
+        block_size = LLONG_MAX / nprocs;
 
-        // Enviar el tamaño del texto cifrado a todos los ranks
+        // Enviar el tamaño del texto cifrado
         int cipher_text_size = cipher_text.size() + 1;
         MPI_Bcast(&cipher_text_size, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
-        // Enviar el texto cifrado a todos los ranks (incluido RANK_0)
+        // Enviar el texto cifrado a todos los ranks
         MPI_Bcast(&cipher_text[0], cipher_text_size, MPI_CHAR, 0, MPI_COMM_WORLD);
 
     } else {
@@ -97,7 +93,10 @@ int main(int argc, char **argv) {
         MPI_Bcast(&cipher_text[0], cipher_text_size, MPI_CHAR, 0, MPI_COMM_WORLD);
     }
 
-    MPI_Bcast(&block_size, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&block_size, 1, MPI_LONG, 0, MPI_COMM_WORLD);
+
+    long start_index = rank_id * block_size;
+    long end_index = (rank_id + 1) * block_size;
 
     if (rank_id == 6) {
         start_index = 7523094288207667809 - 10;
